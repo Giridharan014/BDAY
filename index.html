@@ -678,7 +678,7 @@ a:focus-visible, button:focus-visible, input:focus-visible{
   <span class="pulse"></span>
   <span id="musicIcon">🔈</span>
 </button>
-<audio id="bgMusic" loop preload="none">
+<audio id="bgMusic" loop preload="auto" autoplay muted playsinline>
   <source src="The Love Bug Has Bitten (Background Score) - Anirudh Ravichander (128k).mp3" type="audio/mpeg">
 </audio>
 
@@ -1134,6 +1134,7 @@ window.addEventListener('load', ()=>{
   setTimeout(()=>{
     document.getElementById('preloader').classList.add('hide');
     typeIntro();
+    startBackgroundMusic();
   }, 1400);
 });
 
@@ -1724,14 +1725,54 @@ const bgMusic = document.getElementById('bgMusic');
 const musicToggle = document.getElementById('music-toggle');
 const musicIcon = document.getElementById('musicIcon');
 let musicPlaying = false;
+
+function startBackgroundMusic(){
+  if(!bgMusic || musicPlaying) return;
+
+  const attemptPlay = ()=>{
+    bgMusic.volume = 0.5;
+    bgMusic.muted = true;
+    bgMusic.play().then(()=>{
+      musicPlaying = true;
+      musicIcon.textContent = '🔊';
+    }).catch(()=>{
+      musicPlaying = false;
+      musicIcon.textContent = '🔈';
+    });
+  };
+
+  if(bgMusic.readyState >= 2){
+    attemptPlay();
+  } else {
+    bgMusic.addEventListener('canplaythrough', attemptPlay, { once:true });
+    bgMusic.load();
+  }
+}
+
+function unlockAudio(){
+  if(!bgMusic) return;
+  bgMusic.muted = false;
+  bgMusic.volume = 0.5;
+  bgMusic.play().then(()=>{
+    musicPlaying = true;
+    musicIcon.textContent = '🔊';
+  }).catch(()=>{
+    musicPlaying = false;
+    musicIcon.textContent = '🔈';
+  });
+}
+
 musicToggle.addEventListener('click', ()=>{
   if(musicPlaying){
     bgMusic.pause(); musicIcon.textContent = '🔈'; musicPlaying = false;
   } else {
-    bgMusic.play().catch(()=>{ /* file may be missing until user adds one */ });
-    musicIcon.textContent = '🔊'; musicPlaying = true;
+    unlockAudio();
   }
 });
+
+document.addEventListener('pointerdown', unlockAudio, { once:true });
+document.addEventListener('keydown', unlockAudio, { once:true });
+
 function playChime(){
   // gentle magical chime using the Web Audio API — no external file needed
   try{
